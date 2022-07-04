@@ -2,7 +2,7 @@
   "name": "health-record-server",
   "version": "1.0.0",
   "description": "토이 프로젝트용 nodejs 임시 서버코드 레파지토리",
-  "main": "main.js",
+  "main": "server.js",
   "dependencies": {
     "bcrypt": "^5.0.1",
     "cookie-parser": "^1.4.6",
@@ -17,7 +17,7 @@
     "nodemon": "^2.0.18"
   },
   "scripts": {
-    "dev": "nodemon main.js",
+    "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
