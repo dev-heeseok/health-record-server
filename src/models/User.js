@@ -22,6 +22,9 @@ const userSchema = mongoose.Schema({
   },
   token: {
     type: String,
+  },
+  refreshToken: {
+    type: String,
   }
 
 });
@@ -74,7 +77,9 @@ userSchema.methods.comparePassword = function (plainPassword, callback) {
 userSchema.methods.generateToken = function (callback) {
   const user = this;
 
-  const token = jwt.sign({ _id: user._id }, SECRETE_TOKEN);
+  const token = jwt.sign({ _id: user._id }, SECRETE_TOKEN, {
+    expiresIn: "1h"
+  });
   user.token = token;
   user.save()
     .then(newUser => callback(null, newUser))

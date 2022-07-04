@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const User = require("../../models/User");
-const { authentication } = require("../../middleware/authentication");
+const { verifyToken, authentication } = require("../../middleware/authentication");
 
 /**
  * @route /api/users/register
@@ -10,8 +10,6 @@ const { authentication } = require("../../middleware/authentication");
  * @access public
  */
 router.post("/register", (req, res) => {
-  console.log(`register route ${req}`);
-
   const newUser = new User(req.body);
   newUser.save()
     .then(user => res.status(200).json({ success: true }))
@@ -46,7 +44,7 @@ router.post("/login", (req, res) => {
 
         res.cookie("x_auth", user.token)
           .status(200)
-          .json({ success: true, userID: user._id });
+          .json({ success: true, accessToken: user.token });
       });
     })
     .catch((err) => {
@@ -83,6 +81,16 @@ router.get("/auth", authentication, (req, res) => {
     _id: req.user._id,
     email: req.user.email
   });
+});
+
+router.get("/verifyToken", verifyToken, (req, res) => {
+  res.status(200).json({
+    success: true,
+    auth: true,
+    email: req.user.email,
+    _id: req.user._id
+  });
+
 });
 
 module.exports = router;
