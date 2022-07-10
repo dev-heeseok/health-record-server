@@ -1,9 +1,15 @@
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const roles = require("../lib/RoleCode");
 const { SALT_ROUND, SECRETE_TOKEN } = require("../config");
 
 const userSchema = mongoose.Schema({
+  username: {
+    type: String,
+    minlength: 3,
+    maxlength: 23,
+  },
   email: {
     type: String,
     trim: true,
@@ -12,92 +18,39 @@ const userSchema = mongoose.Schema({
   },
   password: {
     type: String,
-    minlength: 8,
     required: true,
   },
-  userName: {
-    type: String,
-    minlength: 3,
-    maxlength: 23,
+  roles: {
+    User: {
+      type: Number,
+      default: roles.Member
+    },
+    Editor: Number,
+    Admin: Number
   },
-  token: {
-    type: String,
-  },
-  refreshToken: {
-    type: String,
-  }
+  refreshToken: [String]
 
 });
 
 /**
- * @desc password encryption
- * @access public
+ * @desc before create/save
  */
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function (next) {
   const user = this;
-
   if (user.isModified("password")) {
-    bcrypt.genSalt(SALT_ROUND, (err, salt) => {
-      if (err) {
-        console.log(`Failed to bcrypt genSalt ${err}`);
-        return next(err);
-      }
+    try {
+      const salt = await bcrypt.genSalt(SALT_ROUND);
+      const hash = await bcrypt.hash(user.password, salt);
 
-      bcrypt.hash(user.password, salt, (err, hash) => {
-        if (err) {
-          console.log(`Failed to bcrypt hash ${err}`);
-          return next(err);
-        }
+      user.password = hash;
+      next();
 
-        user.password = hash;
-        next();
-      });
-    });
+    } catch (err) {
+      next(err);
+    }
   } else {
     next();
   }
 });
-
-/**
- * @desc compare password 
- * @access public
- */
-userSchema.methods.comparePassword = function (plainPassword, callback) {
-  const user = this;
-
-  bcrypt.compare(plainPassword, user.password)
-    .then(invalid => callback(null, invalid))
-    .catch(err => callback(err,));
-};
-
-/**
- * @desc generate token
- * @access public
- */
-userSchema.methods.generateToken = function (callback) {
-  const user = this;
-
-  const token = jwt.sign({ _id: user._id }, SECRETE_TOKEN, {
-    expiresIn: "1h"
-  });
-  user.token = token;
-  user.save()
-    .then(newUser => callback(null, newUser))
-    .catch(err => callback(err));
-};
-
-/**
- * @desc find user by token
- * @access public static
- */
-userSchema.statics.findByToken = function (token, callback) {
-  const user = this;
-
-  jwt.verify(token, SECRETE_TOKEN, (err, decodedUser) => {
-    user.findOne({ _id: decodedUser._id, token: token })
-      .then(findUser => callback(null, findUser))
-      .catch(err => callback(err));
-  });
-};
 
 module.exports = mongoose.model("User", userSchema);
